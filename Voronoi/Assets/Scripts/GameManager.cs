@@ -41,6 +41,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] Button btnGraham;
     [SerializeField] Button btnIncremental;
 
+    private int realtime = 0;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -52,6 +54,7 @@ public class GameManager : MonoBehaviour
             points.RemoveAt(points.Count-1);
 
             ComputeConvexHull(points, ConvexHullMethod.Jarvis);
+            realtime = 1;
         });
 
         btnGraham.onClick.AddListener(() =>
@@ -60,6 +63,7 @@ public class GameManager : MonoBehaviour
             points.RemoveAt(points.Count - 1);
 
             ComputeConvexHull(points, ConvexHullMethod.GrahamScan);
+            realtime = 2;
         });
 
         btnIncremental.onClick.AddListener(() =>
@@ -74,12 +78,13 @@ public class GameManager : MonoBehaviour
             }
             List<Vector3> tri = IncrementalTriangulation(l);
             Debug.Log(tri.Count);
+
+            lineRenderer.positionCount = tri.Count;
             for (int i = 0; i < tri.Count; i++)
             {
-                Debug.Log(tri[i]);
-                lineRenderer.positionCount = i + 1;
                 lineRenderer.SetPosition(i, tri[i]);
             }
+            realtime = 3;
         });
     }
     
@@ -93,6 +98,32 @@ public class GameManager : MonoBehaviour
                 Vector3 screenPosition = Input.mousePosition;
                 Vector3 worldPosition = Camera.main.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, 1f));
                 points.Add(CreatePoint(worldPosition));
+
+                
+                if (realtime == 1)
+                {
+                    ComputeConvexHull(points, ConvexHullMethod.Jarvis);
+                }
+                else if(realtime == 2)
+                {
+                    ComputeConvexHull(points, ConvexHullMethod.GrahamScan);
+                }
+                else if (realtime == 3)
+                {
+                    List<Vector3> l = new List<Vector3>();
+                    for (int i = 0; i < points.Count; i++)
+                    {
+                        l.Add(points[i].transform.position);
+                    }
+                    List<Vector3> tri = IncrementalTriangulation(l);
+                    Debug.Log(tri.Count);
+
+                    lineRenderer.positionCount = tri.Count;
+                    for (int i = 0; i < tri.Count; i++)
+                    {
+                        lineRenderer.SetPosition(i, tri[i]);
+                    }
+                }
             }
         }
 
@@ -108,6 +139,8 @@ public class GameManager : MonoBehaviour
                 Destroy(p);
             }
             points.Clear();
+
+            realtime = 0;
         }
     }
 
@@ -124,13 +157,13 @@ public class GameManager : MonoBehaviour
         if(method == ConvexHullMethod.Jarvis)
             convexHullPoints = JarvisMarch(points);
         else if(method == ConvexHullMethod.GrahamScan) {
-            convexHullPoints = GrahamScan(points);
+            convexHullPoints = GrahamScan2(points);
         }
 
-        // Créez un LineRenderer pour afficher l'enveloppe convexe.
+        // Créez un LineRenderer pour afficher l'enveloppe convexe
         lineRenderer.positionCount = 0;
 
-        // Remplissez le LineRenderer avec les points de l'enveloppe convexe.
+        // Remplissez le LineRenderer avec les points de l'enveloppe convexe
         for (int i = 0; i < convexHullPoints.Count; i++)
         {
             lineRenderer.positionCount = i+1;
@@ -138,7 +171,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Algorithme de Jarvis pour calculer l'enveloppe convexe.
+    // Algorithme de Jarvis pour calculer l'enveloppe convexe
     private List<Vector3> JarvisMarch(List<GameObject> inputPoints)
     {
         List<Vector3> convexHull = new List<Vector3>();
@@ -146,7 +179,7 @@ public class GameManager : MonoBehaviour
         if (inputPoints.Count < 3)
             return convexHull;
 
-        // Trouvez le point le plus à gauche comme point de départ.
+        // Trouvez le point le plus à gauche comme point de départ
         GameObject startPoint = inputPoints[0];
         foreach (GameObject point in inputPoints)
         {
@@ -156,7 +189,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Ajoutez le point de départ à l'enveloppe convexe.
+        // Ajoutez le point de départ à l'enveloppe convexe
         convexHull.Add(startPoint.transform.position);
 
         GameObject currentPoint = startPoint;
@@ -185,12 +218,52 @@ public class GameManager : MonoBehaviour
         return convexHull;
     }
 
-    // Vérifie si les points sont disposés dans le sens des aiguilles d'une montre.
+    // Vérifie si les points sont disposés dans le sens des aiguilles d'une montre
     private bool IsClockwise(GameObject a, GameObject b, GameObject c)
     {
         Vector2 ab = b.transform.position - a.transform.position;
         Vector2 ac = c.transform.position - a.transform.position;
         return (ab.x * ac.y - ab.y * ac.x) <= 0;
+    }
+
+    private Vector3 ComputeCentroid(List<GameObject> inputPoints)
+    {
+        Vector3 centroid = Vector3.zero;
+
+        foreach (GameObject point in inputPoints)
+        {
+            centroid += point.transform.position;
+        }
+
+        centroid /= inputPoints.Count;
+
+        return centroid;
+    }
+
+    private List<Vector3> SortPointsByPolarAngle(List<GameObject> inputPoints, Vector3 centroid)
+    {
+        List<Vector3> sortedPoints = inputPoints
+            .Select(p => p.transform.position)
+            .OrderBy(p => Mathf.Atan2(p.y - centroid.y, p.x - centroid.x))
+            .ToList();
+
+        return sortedPoints;
+    }
+
+    private bool IsConvex(LinkedListNode<Vector3> point, Vector3 centroid, LinkedList<Vector3> convexHullLinkedList)
+    {
+        LinkedListNode<Vector3> prevNode = point.Previous ?? convexHullLinkedList.Last;
+        LinkedListNode<Vector3> nextNode = point.Next ?? convexHullLinkedList.First;
+
+        Vector3 prev = prevNode.Value;
+        Vector3 next = nextNode.Value;
+
+        // Calculez les angles orientés
+        float angle = Mathf.Atan2(point.Value.y - centroid.y, point.Value.x - centroid.x);
+        float anglePrev = Mathf.Atan2(prev.y - centroid.y, prev.x - centroid.x);
+        float angleNext = Mathf.Atan2(next.y - centroid.y, next.x - centroid.x);
+
+        return anglePrev <= angle && angle <= angleNext;
     }
 
     // Algorithme du Graham Scan pour calculer l'enveloppe convexe.
@@ -201,39 +274,44 @@ public class GameManager : MonoBehaviour
         if (inputPoints.Count < 3)
             return convexHull;
 
-        // Trouvez le point le plus bas (et le plus à gauche) comme point de départ.
-        GameObject startPoint = inputPoints[0];
-        foreach (GameObject point in inputPoints)
+        Vector3 barycentre = ComputeCentroid(inputPoints);
+        List<Vector3> sortedPoints = SortPointsByPolarAngle(inputPoints, barycentre);
+
+        // Suppression des points non convexes
+        LinkedList<Vector3> convexHullLinkedList = new LinkedList<Vector3>(sortedPoints);
+
+        LinkedListNode<Vector3> pivot = convexHullLinkedList.First;
+        LinkedListNode<Vector3> start = pivot;
+
+        bool advance = true;
+
+        do
         {
-            if (point.transform.position.y < startPoint.transform.position.y || (point.transform.position.y == startPoint.transform.position.y && point.transform.position.x < startPoint.transform.position.x))
+            if (IsConvex(pivot, barycentre, convexHullLinkedList))
             {
-                startPoint = point;
+                pivot = pivot.Next ?? convexHullLinkedList.First;
+                advance = true;
             }
-        }
+            else
+            {
+                start = pivot.Previous ?? convexHullLinkedList.Last;
+                convexHullLinkedList.Remove(pivot);
+                pivot = start;
+                advance = false;
+            }
+        } while (pivot != start || !advance);
 
-        // Triez les points en fonction de leur angle polaire par rapport au point de départ.
-        List<GameObject> sortedPoints = inputPoints
-            .OrderBy(p => Mathf.Atan2(p.transform.position.y - startPoint.transform.position.y, p.transform.position.x - startPoint.transform.position.x))
-            .ToList();
-
-        convexHull.Add(startPoint.transform.position);
-        convexHull.Add(sortedPoints[0].transform.position);
-        convexHull.Add(sortedPoints[1].transform.position);
-
-        for (int i = 2; i < sortedPoints.Count; i++)
+        convexHull.Clear();
+        
+        foreach (Vector3 point in convexHullLinkedList)
         {
-            while (convexHull.Count > 1 && !IsCounterClockwise(convexHull[convexHull.Count - 2], convexHull[convexHull.Count - 1], sortedPoints[i]))
-            {
-                convexHull.RemoveAt(convexHull.Count - 1);
-            }
-
-            convexHull.Add(sortedPoints[i].transform.position);
+            convexHull.Add(point);
         }
 
         return convexHull;
     }
 
-    // Vérifie si les points sont disposés dans le sens trigonométrique (anti-horaire).
+    // Vérifie si les points sont disposés dans le sens trigonométrique (anti-horaire)
     private bool IsCounterClockwise(Vector3 a, Vector3 b, GameObject c)
     {
         Vector2 ab = b - a;
@@ -248,25 +326,24 @@ public class GameManager : MonoBehaviour
         if (inputPoints.Count < 3)
             return triangulation;
 
-        // Triez les points en fonction de leur abscisse croissante.
+        // Triez les points en fonction de leur abscisse croissante
         inputPoints.Sort((a, b) => a.x.CompareTo(b.x));
 
-        // Initialisez la triangulation avec les deux premiers points.
+        // Initialisez la triangulation avec les deux premiers points
         triangulation.Add(inputPoints[0]);
         triangulation.Add(inputPoints[1]);
 
-        // Initialisez les arêtes colinéaires avec les deux premiers points.
         List<Edge> colinearEdges = new List<Edge>
         {
             new Edge(inputPoints[0], inputPoints[1]),
         };
 
-        // Parcourez les points restants un par un.
+        // Parcours des points restants un par un
         for (int i = 2; i < inputPoints.Count; i++)
         {
             Vector3 currentPoint = inputPoints[i];
 
-            // Recherchez les arêtes "vues" depuis le point courant.
+            // Recherche des arêtes "vues" depuis le point courant
             List<Edge> visibleEdges = new List<Edge>();
 
             foreach (Edge edge in colinearEdges)
@@ -277,7 +354,7 @@ public class GameManager : MonoBehaviour
                 }
             }
 
-            // Ajoutez de nouveaux triangles à la triangulation.
+            // Ajout de nouveaux triangles à la triangulation
             foreach (Edge edge in visibleEdges)
             {
                 triangulation.Add(edge.P1);
@@ -285,7 +362,7 @@ public class GameManager : MonoBehaviour
                 triangulation.Add(currentPoint);
             }
 
-            // Ajoutez les nouvelles arêtes colinéaires.
+            // Ajout des nouvelles arêtes colinéaires
             List<Edge> newColinearEdges = new List<Edge>();
 
             foreach (Edge edge in colinearEdges)
@@ -304,13 +381,13 @@ public class GameManager : MonoBehaviour
         return triangulation;
     }
 
-    // Vérifie si une arête est "vue" depuis un point donné.
+    // Vérifie si une arête est "vue" depuis un point donné
     private bool IsEdgeVisibleFromPoint(Edge edge, Vector3 point)
     {
         Vector3 v1 = edge.P1 - point;
         Vector3 v2 = edge.P2 - point;
 
-        return Vector3.Cross(v1, v2).z < 0; // Vérifie si le produit vectoriel est négatif (sens trigonométrique).
+        return Vector3.Cross(v1, v2).z < 0; // Vérifie si le produit vectoriel est négatif (sens trigonométrique)
     }
 
 
@@ -721,8 +798,11 @@ public class GameManager : MonoBehaviour
     }
 
 
+    private List<Vector3> GrahamScan2(List<GameObject> inputPoints)
+    {
+        return JarvisMarch(inputPoints);
+    }
 
-    
     /**
      * Tri les points par angle polaire
      */
