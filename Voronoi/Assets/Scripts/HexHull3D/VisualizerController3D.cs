@@ -11,7 +11,7 @@ public class VisualizerController3D : MonoBehaviour
     public GameObject pointObj;
     public GameObject pointActiveObj;
 
-    private HashSet<GameObject> allPoints = new HashSet<GameObject>();
+    private HashSet<GameObject> allPoints = new();
 
     public Normalizer3 normalizer;
 
@@ -32,7 +32,7 @@ public class VisualizerController3D : MonoBehaviour
 
     private void StartConvexHull()
     {
-        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 1f, numberOfPoints: 50);
+        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 10f, numberOfPoints: 100);
         
         foreach (Vector3 p in points_Unity)
         {

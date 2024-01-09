@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace Habrador_Computational_Geometry
 {
-    //Unity loves to automatically cast beween Vector2 and Vector3
-    //Because theres no way to stop it, its better to use a custom struct 
     [System.Serializable]
     public struct MyVector3
     {
@@ -20,11 +18,6 @@ namespace Habrador_Computational_Geometry
             this.z = z;
         }
 
-
-
-        //
-        // Vector operations
-        //
         public static float Dot(MyVector3 a, MyVector3 b)
         {
             float dotProduct = (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
@@ -80,11 +73,8 @@ namespace Habrador_Computational_Geometry
             return crossProduct;
         }
 
-        //Test if this vector is approximately the same as another vector
         public bool Equals(MyVector3 other)
         {
-            //Using Mathf.Approximately() is not accurate enough
-            //Using Mathf.Abs is slow because Abs involves a root
 
             float xDiff = this.x - other.x;
             float yDiff = this.y - other.y;
@@ -92,7 +82,6 @@ namespace Habrador_Computational_Geometry
 
             float e = MathUtility.EPSILON;
 
-            //If all of the differences are around 0
             if (
                 xDiff < e && xDiff > -e && 
                 yDiff < e && yDiff > -e && 
@@ -105,22 +94,6 @@ namespace Habrador_Computational_Geometry
                 return false;
             }
         }
-
-
-
-        //
-        // Directions by using Unity's coordinate system
-        //
-
-        public static MyVector3 Right   => new MyVector3(1f, 0f, 0f);
-        public static MyVector3 Forward => new MyVector3(0f, 0f, 1f);
-        public static MyVector3 Up      => new MyVector3(0f, 1f, 0f);
-
-
-
-        //
-        // Operator overloads
-        //
 
         public static MyVector3 operator +(MyVector3 a, MyVector3 b)
         {

@@ -17,12 +17,5 @@ namespace Habrador_Computational_Geometry
 
             this.uv = default;
         }
-
-        public MyMeshVertex(MyVector3 position, MyVector3 normal, MyVector2 uv)
-        {
-            this.position = position;
-            this.normal = normal;
-            this.uv = uv;
-        }
     }
 }
