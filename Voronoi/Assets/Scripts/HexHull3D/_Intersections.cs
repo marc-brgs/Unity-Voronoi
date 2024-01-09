@@ -1,31 +1,26 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace Habrador_Computational_Geometry
+public static class _Intersections
 {
-    public static class _Intersections
+    public static bool PointWithinConvexHull(Vector3 point, HalfEdgeData3 convexHull)
     {
-        public static bool PointWithinConvexHull(MyVector3 point, HalfEdgeData3 convexHull)
+        bool isInside = true;
+
+        float epsilon = MathUtility.EPSILON;
+        foreach (HalfEdgeFace3 triangle in convexHull.faces)
         {
-            bool isInside = true;
+            Plane3 plane = new Plane3(triangle.edge.v.position, triangle.edge.v.normal);
 
-            float epsilon = MathUtility.EPSILON;
-            foreach (HalfEdgeFace3 triangle in convexHull.faces)
+            float distance = _Geometry.GetSignedDistanceFromPointToPlane(point, plane);
+            
+            if (distance > 0f + epsilon)
             {
-                Plane3 plane = new Plane3(triangle.edge.v.position, triangle.edge.v.normal);
+                isInside = false;
 
-                float distance = _Geometry.GetSignedDistanceFromPointToPlane(point, plane);
-                
-                if (distance > 0f + epsilon)
-                {
-                    isInside = false;
-
-                    break;
-                }
+                break;
             }
-
-            return isInside;
         }
+
+        return isInside;
     }
 }

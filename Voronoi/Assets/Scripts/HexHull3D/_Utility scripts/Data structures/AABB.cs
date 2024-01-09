@@ -2,58 +2,55 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Habrador_Computational_Geometry
-{ 
-    public struct AABB3
+public struct AABB3
+{
+    public Vector3 max;
+    public Vector3 min;
+
+    public AABB3(List<Vector3> points)
     {
-        public MyVector3 max;
-        public MyVector3 min;
+        Vector3 p1 = points[0];
 
-        public AABB3(List<MyVector3> points)
+        this.min = p1;
+        this.max = p1;
+
+        if (points.Count == 1)
         {
-            MyVector3 p1 = points[0];
+            return;
+        }
+        
+        for (int i = 1; i < points.Count; i++)
+        {
+            Vector3 p = points[i];
 
-            this.min = p1;
-            this.max = p1;
-
-            if (points.Count == 1)
+            //x
+            if (p.x < min.x)
             {
-                return;
+                min.x = p.x;
             }
-            
-            for (int i = 1; i < points.Count; i++)
+            else if (p.x > max.x)
             {
-                MyVector3 p = points[i];
+                max.x = p.x;
+            }
 
-                //x
-                if (p.x < min.x)
-                {
-                    min.x = p.x;
-                }
-                else if (p.x > max.x)
-                {
-                    max.x = p.x;
-                }
+            //y
+            if (p.y < min.y)
+            {
+                min.y = p.y;
+            }
+            else if (p.y > max.y)
+            {
+                max.y = p.y;
+            }
 
-                //y
-                if (p.y < min.y)
-                {
-                    min.y = p.y;
-                }
-                else if (p.y > max.y)
-                {
-                    max.y = p.y;
-                }
-
-                //z
-                if (p.z < min.z)
-                {
-                    min.z = p.z;
-                }
-                else if (p.z > max.z)
-                {
-                    max.z = p.z;
-                }
+            //z
+            if (p.z < min.z)
+            {
+                min.z = p.z;
+            }
+            else if (p.z > max.z)
+            {
+                max.z = p.z;
             }
         }
     }

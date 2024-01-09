@@ -1,12 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Habrador_Computational_Geometry;
-using System.Linq;
 
 public class VisualizerController3D : MonoBehaviour
 {
     public MeshFilter displayMeshHere;
-    public MeshFilter displayOtherMeshHere;
 
     public GameObject pointObj;
     public GameObject pointActiveObj;
@@ -15,24 +12,21 @@ public class VisualizerController3D : MonoBehaviour
 
     public Normalizer3 normalizer;
 
-    public HashSet<HalfEdgeFace3> meshData;
-
-
-
     void Awake()
 	{
         pointObj.SetActive(false);
         pointActiveObj.SetActive(false); 
 
         displayMeshHere.mesh = null;
-        displayOtherMeshHere.mesh = null;
 
         StartConvexHull();
     }
 
     private void StartConvexHull()
     {
-        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 10f, numberOfPoints: 100);
+        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 5f, numberOfPoints: 50);
+        
+        
         
         foreach (Vector3 p in points_Unity)
         {
@@ -43,38 +37,13 @@ public class VisualizerController3D : MonoBehaviour
             allPoints.Add(newPoint);
         }
         
-        HashSet<MyVector3> points = new HashSet<MyVector3>(points_Unity.Select(x => x.ToMyVector3()));
+        //HashSet<Vector3> points = new HashSet<Vector3>(points_Unity.Select(x => x.ToVector3()));
         
-        normalizer = new Normalizer3(new List<MyVector3>(points));
+        normalizer = new Normalizer3(new List<Vector3>(points_Unity));
 
         VisualizeIterativeConvexHull visualizeThisAlgorithm = GetComponent<VisualizeIterativeConvexHull>();
 
-        visualizeThisAlgorithm.StartVisualizer(points);
-    }
-
-
-
-    private void OnDrawGizmos()
-    {
-        if (meshData == null)
-        {
-            return;
-        }
-
-        Gizmos.color = Color.black;
-
-        foreach (HalfEdgeFace3 f in meshData)
-        {
-
-            Vector3 p1 = f.edge.v.position.ToVector3();
-            Vector3 p2 = f.edge.nextEdge.v.position.ToVector3();
-            Vector3 p3 = f.edge.prevEdge.v.position.ToVector3();
-
-
-            Gizmos.DrawLine(p1, p2);
-            Gizmos.DrawLine(p2, p3);
-            Gizmos.DrawLine(p3, p1);
-        }
+        visualizeThisAlgorithm.StartVisualizer(points_Unity);
     }
     
     public void DisplayMesh(HashSet<HalfEdgeFace3> meshDataUnNormalized, MeshFilter mf)
@@ -90,24 +59,13 @@ public class VisualizerController3D : MonoBehaviour
     {
         HashSet<HalfEdgeFace3> meshDataUnNormalized = meshData;
 
-        this.meshData = meshDataUnNormalized;
-
         DisplayMesh(meshDataUnNormalized, displayMeshHere);
     }
-
-    public void DisplayMeshOther(HashSet<HalfEdgeFace3> meshData)
-    {
-        HashSet<HalfEdgeFace3> meshDataUnNormalized = normalizer.UnNormalize(meshData);
-
-        DisplayMesh(meshDataUnNormalized, displayOtherMeshHere);
-        
-        meshData = normalizer.Normalize(meshDataUnNormalized);
-    }
     
-    public void DisplayActivePoint(MyVector3 pos)
+    public void DisplayActivePoint(Vector3 pos)
     {
         pointActiveObj.SetActive(true);
-        pointActiveObj.transform.position = pos.ToVector3();
+        pointActiveObj.transform.position = pos;
     }
     
     public void HideActivePoint()
@@ -115,9 +73,9 @@ public class VisualizerController3D : MonoBehaviour
         pointActiveObj.SetActive(false);
     }
     
-    public void HideVisiblePoint(MyVector3 pos)
+    public void HideVisiblePoint(Vector3 pos)
     {
-        Vector3 pos_unNormalized = normalizer.UnNormalize(pos).ToVector3();
+        Vector3 pos_unNormalized = normalizer.UnNormalize(pos);
 
         foreach (GameObject go in allPoints)
         {
@@ -155,11 +113,15 @@ public class VisualizerController3D : MonoBehaviour
 
         for (int i = 0; i < numberOfPoints; i++)
         {
+            /*
             float randomX = Random.Range(min, max);
             float randomY = Random.Range(min, max);
             float randomZ = Random.Range(min, max);
 
             randomPoints.Add(new Vector3(randomX, randomY, randomZ));
+            */
+
+            randomPoints.Add(Random.insideUnitSphere * halfCubeSize);
         }
 
         return randomPoints;

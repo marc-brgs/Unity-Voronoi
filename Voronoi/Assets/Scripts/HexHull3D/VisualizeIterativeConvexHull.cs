@@ -1,13 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Habrador_Computational_Geometry;
 
 public class VisualizeIterativeConvexHull : MonoBehaviour
 {
     private VisualizerController3D controller;
     
-    public void StartVisualizer(HashSet<MyVector3> points)
+    public void StartVisualizer(HashSet<Vector3> points)
     {
         controller = GetComponent<VisualizerController3D>();
 
@@ -20,16 +19,16 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
 
 
 
-    private IEnumerator GenerateHull(HashSet<MyVector3> points, HalfEdgeData3 convexHull)
+    private IEnumerator GenerateHull(HashSet<Vector3> points, HalfEdgeData3 convexHull)
     {
         controller.DisplayMeshMain(convexHull.faces);
         controller.HideAllVisiblePoints(convexHull.verts);
 
         yield return new WaitForSeconds(1f);
 
-        List<MyVector3> pointsToAdd = new List<MyVector3>(points);
+        List<Vector3> pointsToAdd = new List<Vector3>(points);
 
-        foreach (MyVector3 p in pointsToAdd)
+        foreach (Vector3 p in pointsToAdd)
         {
             bool isWithinHull = _Intersections.PointWithinConvexHull(p, convexHull);
 
@@ -56,7 +55,6 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
             }
 
             controller.DisplayMeshMain(convexHull.faces);
-            controller.DisplayMeshOther(visibleTriangles);
             controller.HideAllVisiblePoints(convexHull.verts);
 
             yield return new WaitForSeconds(2f);
@@ -68,8 +66,6 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
             {
                 visibleTriangles.Remove(visibleTrianglesList[i]);
 
-                controller.DisplayMeshOther(visibleTriangles);
-
                 yield return new WaitForSeconds(0.5f);
             }
 
@@ -78,8 +74,8 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
 
             foreach (HalfEdge3 borderEdge in borderEdges)
             {
-                MyVector3 p1 = borderEdge.prevEdge.v.position;
-                MyVector3 p2 = borderEdge.v.position;
+                Vector3 p1 = borderEdge.prevEdge.v.position;
+                Vector3 p2 = borderEdge.v.position;
 
                 HalfEdgeFace3 newTriangle = convexHull.AddTriangle(p2, p1, p);
 

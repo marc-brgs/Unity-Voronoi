@@ -2,20 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Habrador_Computational_Geometry
+public struct MyMeshVertex
 {
-    public struct MyMeshVertex
+    public Vector3 position;
+    public Vector3 normal;
+    public Vector3 uv;
+
+    public MyMeshVertex(Vector3 position, Vector3 normal)
     {
-        public MyVector3 position;
-        public MyVector3 normal;
-        public MyVector2 uv;
+        this.position = position;
+        this.normal = normal;
 
-        public MyMeshVertex(MyVector3 position, MyVector3 normal)
-        {
-            this.position = position;
-            this.normal = normal;
-
-            this.uv = default;
-        }
+        this.uv = default;
     }
 }
