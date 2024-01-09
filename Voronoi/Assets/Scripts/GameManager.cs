@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using DelaunayVoronoi;
 
 public class GameManager : MonoBehaviour
 {
@@ -35,11 +36,16 @@ public class GameManager : MonoBehaviour
     private bool drawingPoints;
     [SerializeField] private LineRenderer lineRenderer;
 
+    [SerializeField] private GameObject linesSchema;
+
     public enum ConvexHullMethod { Jarvis, GrahamScan };
+    public enum TriangulationMethod { Delaunay, Voronoi};
 
     [SerializeField] Button btnJarvis;
     [SerializeField] Button btnGraham;
     [SerializeField] Button btnIncremental;
+    [SerializeField] Button btnDelaunay;
+    [SerializeField] Button btnVoronoi;
 
     private int realtime = 0;
 
@@ -68,7 +74,7 @@ public class GameManager : MonoBehaviour
 
         btnIncremental.onClick.AddListener(() =>
         {
-            Destroy(points[points.Count - 1]);
+            /*Destroy(points[points.Count - 1]);
             points.RemoveAt(points.Count - 1);
 
             List<Vector3> l = new List<Vector3>();
@@ -84,10 +90,30 @@ public class GameManager : MonoBehaviour
             {
                 lineRenderer.SetPosition(i, tri[i]);
             }
+            realtime = 3;*/
+        });
+
+        btnDelaunay.onClick.AddListener(() =>
+        {
+            Destroy(points[points.Count - 1]);
+            points.RemoveAt(points.Count - 1);
+
+            clearDelaunaySchema();
+            GenerateVoronoiDiagram(TriangulationMethod.Delaunay);
             realtime = 3;
         });
+
+        btnVoronoi.onClick.AddListener(() =>
+        {
+            Destroy(points[points.Count - 1]);
+            points.RemoveAt(points.Count - 1);
+
+            clearDelaunaySchema();
+            GenerateVoronoiDiagram(TriangulationMethod.Voronoi);
+            realtime = 4;
+        });
     }
-    
+
     // Update is called once per frame
     void Update()
     {
@@ -110,19 +136,13 @@ public class GameManager : MonoBehaviour
                 }
                 else if (realtime == 3)
                 {
-                    List<Vector3> l = new List<Vector3>();
-                    for (int i = 0; i < points.Count; i++)
-                    {
-                        l.Add(points[i].transform.position);
-                    }
-                    List<Vector3> tri = IncrementalTriangulation(l);
-                    Debug.Log(tri.Count);
-
-                    lineRenderer.positionCount = tri.Count;
-                    for (int i = 0; i < tri.Count; i++)
-                    {
-                        lineRenderer.SetPosition(i, tri[i]);
-                    }
+                    clearDelaunaySchema();
+                    GenerateVoronoiDiagram(TriangulationMethod.Delaunay);
+                }
+                else if (realtime == 4)
+                {
+                    clearDelaunaySchema();
+                    GenerateVoronoiDiagram(TriangulationMethod.Voronoi);
                 }
             }
         }
@@ -146,7 +166,8 @@ public class GameManager : MonoBehaviour
 
     private GameObject CreatePoint(Vector3 position)
     {
-        GameObject point = Instantiate(pointPrefab, position, Quaternion.identity);
+        Vector3 zTo0Position = new Vector3(position.x, position.y, 0f);
+        GameObject point = Instantiate(pointPrefab, zTo0Position, Quaternion.identity);
         return point;
     }
 
@@ -319,484 +340,92 @@ public class GameManager : MonoBehaviour
         return (ab.x * ac.y - ab.y * ac.x) > 0;
     }
 
-    private List<Vector3> IncrementalTriangulation(List<Vector3> inputPoints)
+
+    // VORONOI ET DELAUNAY
+
+    void clearDelaunaySchema()
     {
-        List<Vector3> triangulation = new List<Vector3>();
-
-        if (inputPoints.Count < 3)
-            return triangulation;
-
-        // Triez les points en fonction de leur abscisse croissante
-        inputPoints.Sort((a, b) => a.x.CompareTo(b.x));
-
-        // Initialisez la triangulation avec les deux premiers points
-        triangulation.Add(inputPoints[0]);
-        triangulation.Add(inputPoints[1]);
-
-        List<Edge> colinearEdges = new List<Edge>
+        for (int i = 0; i < linesSchema.transform.childCount; i++)
         {
-            new Edge(inputPoints[0], inputPoints[1]),
-        };
-
-        // Parcours des points restants un par un
-        for (int i = 2; i < inputPoints.Count; i++)
-        {
-            Vector3 currentPoint = inputPoints[i];
-
-            // Recherche des arêtes "vues" depuis le point courant
-            List<Edge> visibleEdges = new List<Edge>();
-
-            foreach (Edge edge in colinearEdges)
-            {
-                if (IsEdgeVisibleFromPoint(edge, currentPoint))
-                {
-                    visibleEdges.Add(edge);
-                }
-            }
-
-            // Ajout de nouveaux triangles à la triangulation
-            foreach (Edge edge in visibleEdges)
-            {
-                triangulation.Add(edge.P1);
-                triangulation.Add(edge.P2);
-                triangulation.Add(currentPoint);
-            }
-
-            // Ajout des nouvelles arêtes colinéaires
-            List<Edge> newColinearEdges = new List<Edge>();
-
-            foreach (Edge edge in colinearEdges)
-            {
-                if (!IsEdgeVisibleFromPoint(edge, currentPoint))
-                {
-                    newColinearEdges.Add(edge);
-                }
-            }
-
-            newColinearEdges.Add(new Edge(colinearEdges.Last().P2, currentPoint));
-
-            colinearEdges = newColinearEdges;
-        }
-
-        return triangulation;
-    }
-
-    // Vérifie si une arête est "vue" depuis un point donné
-    private bool IsEdgeVisibleFromPoint(Edge edge, Vector3 point)
-    {
-        Vector3 v1 = edge.P1 - point;
-        Vector3 v2 = edge.P2 - point;
-
-        return Vector3.Cross(v1, v2).z < 0; // Vérifie si le produit vectoriel est négatif (sens trigonométrique)
-    }
-
-
-
-    // OLD
-    
-    /*
-     * Determine if a point is inside of a side of polygon with clockwise normal
-     * Used by Sutherland and RemplissageRectEG algorithms
-     */
-    private bool visible(Vector3 S, Vector3 F1, Vector3 F2)
-    {
-        Vector2 midToS = new Vector2(S.x - F1.x, S.y - F1.y);
-        
-        Vector2 n = new Vector2(-(F2.y - F1.y), F2.x - F1.x);
-        Vector2 m = -n;
-        
-        if(Vector3.Dot(n, midToS) < 0) // dedans
-            return true;
-        if(Vector3.Dot(n, midToS) > 0) // dehors
-            return false;
-        // sur le bord de la fenêtre
-        return true;
-    }
-    
-    /*
-     * Reset sprite texture used for filling to transparent
-     */
-    private void clearTexture(Texture2D tex)
-    {
-        for (int x = 0; x < tex.width; x++)
-        {
-            for (int y = 0; y < tex.height; y++)
-            {
-                tex.SetPixel(x, y, Color.clear);
-            }
-        }
-        tex.Apply();
-        
-        // Obtenir tous les gameobjects qui s'appellent "Line"
-        GameObject[] lines = GameObject.FindGameObjectsWithTag("Line");
-
-        // Détruire chaque gameobject
-        foreach (GameObject line in lines)
-        {
-            Destroy(line);
-        }
-    }
-    
-    public void ChangeColor(int color=0)
-    {
-        switch (color)
-        {
-            case 0:
-                fillColor = Color.yellow;
-                break;
-            case 1:
-                fillColor = Color.magenta;
-                break;
-            case 2:
-                fillColor = Color.green;
-                break;
-            case 3:
-                fillColor = Color.cyan;
-                break;
-        }
-        RemplissageRectEG();
-    }
-    
-    // Remplissage RectEG
-    public void RemplissageRectEG()
-    {
-        // Recover data
-        Vector3[] Poly = new Vector3[lrPolygon.positionCount];
-        lrPolygon.GetPositions(Poly);
-        int nb = 0;
-        Vector2[] rectEG = rectangleEnglobant(Poly);
-        int xmin = (int) rectEG[0].x;
-        int ymin = (int) rectEG[0].y;
-        int xmax = (int) rectEG[1].x;
-        int ymax = (int) rectEG[1].y;
-
-        for (int x = xmin; x < xmax; x++)
-        {
-            for (int y = ymin; y < ymax; y++)
-            {
-                if (interieur(x, y, Poly))
-                {
-                    affichePixel(x, y);
-                    nb++;
-                }
-            }
-        }
-        
-        img.sprite.texture.Apply();
-        img.gameObject.SetActive(true);
-    }
-
-    /*
-     * Used by RemplissageRectEG to determine x y min max for pixel loop optimization
-     */
-    private Vector2[] rectangleEnglobant(Vector3[] Poly)
-    {
-        int xmin = Screen.width, xmax = 0, ymin = Screen.height, ymax = 0;
-        
-        for (int i = 0; i < Poly.Length; i++)
-        {
-            Vector2 polyPixel = new Vector2(worldPosXToPixel(Poly[i].x), worldPosYToPixel(Poly[i].y));
-            //Debug.Log("worldpos: " + Poly[i].x + " " + Poly[i].y + ", pixel: " + worldPosXToPixel(Poly[i].x) + " " + worldPosYToPixel(Poly[i].y));
-            if (polyPixel.x < xmin)
-              xmin = (int) polyPixel.x;
-            if (polyPixel.x > xmax)
-                xmax = (int) polyPixel.x;
-            if (polyPixel.y < ymin)
-                ymin = (int) polyPixel.y;
-            if (polyPixel.y > ymax)
-                ymax = (int) polyPixel.y;
-        }
-        
-        //Debug.Log("xmin: " + xmin + ", xmax: " + xmax + ", ymin: " + ymin + ", ymax: " + ymax);
-        Vector2[] rectEG = new Vector2[2];
-        rectEG[0] = new Vector2(xmin, ymin); // P1
-        rectEG[1] = new Vector2(xmax, ymax); // P2
-        return rectEG;
-    }
-
-    /*
-     * Used by RemplissageRectEG to determine if a point is inside polygon
-     */
-    private bool interieur(int x, int y, Vector3[] poly)
-    {
-        // Only working for convex polygons
-        for (int i = 0; i < poly.Length-1; i++)
-        {
-            if(!visible(new Vector3(x, y), new Vector3(worldPosXToPixel(poly[i].x), worldPosYToPixel(poly[i].y)), new Vector3(worldPosXToPixel(poly[i+1].x), worldPosYToPixel(poly[i+1].y)))) 
-                return false;
-        }
-        
-        return true;
-    }
-
-    /*
-     * Change pixel color of sprite texture used for filling display
-     */
-    private void affichePixel(int x, int y)
-    {
-        img.sprite.texture.SetPixel(x, y, fillColor);
-    }
-    
-    /*
-     * Convert world position x axis value to pixel
-     */
-    private int worldPosXToPixel(float v)
-    {
-        return (int) (((v + 5.33) * Screen.width) / 10.66);
-    }
-    
-    /*
-     * Convert world position y axis value to pixel
-     */
-    private int worldPosYToPixel(float v)
-    {
-        return (int) (((v + 3) * Screen.height) / 6);
-    }
-    
-    /*
-     * Click actions event for drawing window
-     */
-    private void drawWindow()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Vector3 mouseWorldPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            mouseWorldPosition.z = 0f;
-            lrWindow.positionCount = windowIndex + 1;
-            lrWindow.SetPosition(windowIndex, mouseWorldPosition);
-            windowIndex++;
-        }
-
-        if (Input.GetMouseButtonDown(1))
-        {
-            lrWindow.positionCount = windowIndex + 1;
-            lrWindow.SetPosition(windowIndex, lrWindow.GetPosition(0));
-            windowIndex++;
-            drawingWindow = false;
-            drawingPolygon = true;
-            textWindow.SetActive(false);
-            textPolygon.SetActive(true);
+            Destroy(linesSchema.transform.GetChild(i).gameObject);
         }
     }
 
-    /*
-     * Click actions event for drawing polygon
-     */
-    private void drawPolygon()
+    void GenerateVoronoiDiagram(TriangulationMethod method)
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Vector3 mouseWorldPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            mouseWorldPosition.z = 0f;
-            lrPolygon.positionCount = polygonIndex + 1;
-            lrPolygon.SetPosition(polygonIndex, mouseWorldPosition);
-            polygonIndex++;
-        }
+        int numberOfPoints = 100;
+        double maxX = 20;
+        double maxY = 20;
 
-        if (lrPolygon.positionCount > 1 && Input.GetMouseButtonDown(1))
+
+        //var convertedPoints = ConvertGameObjectsToPoints(points);
+
+        // Générer les points
+        var delaunay = new DelaunayTriangulator();
+        //var points = delaunay.GeneratePoints(numberOfPoints, maxX, maxY);
+        var convertedPoints = delaunay.ConvertAndInitialize(points);
+
+        // Créer la triangulation de Delaunay
+        var triangles = delaunay.BowyerWatson(convertedPoints);
+
+        // Générer le diagramme de Voronoi
+        var voronoi = new Voronoi();
+        var voronoiEdges = voronoi.GenerateEdgesFromDelaunay(triangles);
+
+        if(method == TriangulationMethod.Delaunay)
         {
-            lrPolygon.positionCount = polygonIndex + 1;
-            lrPolygon.SetPosition(polygonIndex, lrPolygon.GetPosition(0));
-            polygonIndex++;
-            drawingPolygon = false;
-            textPolygon.SetActive(false);
+            DrawDelaunayTriangles(triangles);
+        }
+        else if(method == TriangulationMethod.Voronoi)
+        {
+            DrawVoronoiEdges(voronoiEdges);
         }
     }
 
-    /**
-     * Remplissage par ligne
-     */
-    public void RemplissageLigne()
+    private void DrawDelaunayTriangles(IEnumerable<Triangle> triangles)
     {
-        // Liste des points du polygone
-        Vector3[] points = new Vector3[lrPolygon.positionCount];
-        lrPolygon.GetPositions(points);
-
-        // Trier les points par angle polaire croissant
-        points = SortPointsByPolarAngle(points);
-
-        // Tracer une ligne entre chaque paire de points consécutifs
-        for (int i = 0; i < points.Length - 1; i++)
+        foreach (var triangle in triangles)
         {
-            DrawLine(points[i], points[i + 1], Color.red);
-        }
-
-        // Tracer une ligne entre le dernier et le premier point pour fermer le polygone
-        DrawLine(points[points.Length - 1], points[0], Color.red);
-    }
-
-    public void RemplissageLigne2()
-    {
-        Vector3[] points = new Vector3[lrPolygon.positionCount];
-        lrPolygon.GetPositions(points);
-        
-        // Nombre de lignes parallèles à tracer
-        int numLines = 5;
-
-        // Distance entre chaque ligne parallèle
-        float lineSpacing = 0.1f;
-
-        // Tracer les lignes parallèles
-        for (int i = 0; i < numLines; i++)
-        {
-            // Calculer la distance entre le bord du polygone et la ligne parallèle
-            float distance = lineSpacing * (i + 1);
-
-            // Tracer une ligne parallèle pour chaque point du bord du polygone
-            for (int j = 0; j < points.Length - 1; j++)
-            {
-                // Calculer le vecteur normal au bord du polygone
-                Vector3 normal = Vector3.Cross(points[j + 1] - points[j], Vector3.forward).normalized;
-
-                // Calculer les points de départ et d'arrivée de la ligne parallèle
-                Vector3 start = points[j] + normal * distance;
-                Vector3 end = points[j + 1] + normal * distance;
-
-                // Vérifier si la ligne intersecte un bord du polygone
-                Vector3 intersection = GetLineIntersection(start, end, points[j], points[j + 1]);
-                if (intersection != Vector3.zero)
-                {
-                    // La ligne intersecte un bord du polygone, mettre à jour l'extrémité de la ligne
-                    end = intersection;
-                }
-
-                // Tracer la ligne parallèle
-                DrawLine(start, end, Color.green);
-            }
-        }
-    }
-    
-    Vector3 GetLineIntersection(Vector3 line1Start, Vector3 line1End, Vector3 line2Start, Vector3 line2End)
-    {
-        Vector3 intersection = Vector3.zero;
-
-        // Calculer les vecteurs s et t
-        Vector3 s = line1End - line1Start;
-        Vector3 t = line2End - line2Start;
-
-        // Calculer la valeur de u
-        float u = (-t.y * s.x + s.y * t.x) / (-t.x * s.y + s.x * t.y);
-
-        // Vérifier si les lignes s'intersectent
-        if (u >= 0 && u <= 1)
-        {
-            // Calculer l'intersection
-            intersection = line1Start + u * s;
-        }
-
-        return intersection;
-    }
-
-    
-    public void RemplissageLigne3()
-    {
-        Vector3[] points = new Vector3[lrPolygon.positionCount];
-        lrPolygon.GetPositions(points);
-        points = SortPointsByPolarAngle(points);
-        
-        // Créer une RenderTexture temporaire pour stocker le rendu de la caméra
-        RenderTexture tempRenderTexture = new RenderTexture(Screen.width, Screen.height, 24);
-        mainCamera.targetTexture = tempRenderTexture;
-        mainCamera.Render();
-
-        // Créer un texture2D vide pour stocker les pixels lus depuis la RenderTexture
-        Texture2D texture = new Texture2D(Screen.width, Screen.height, TextureFormat.ARGB32, false);
-
-        // Lire les pixels de la RenderTexture dans le texture2D
-        Rect rect = new Rect(0, 0, Screen.width, Screen.height);
-        texture.ReadPixels(rect, (int)points[0].x, (int)points[0].y);
-        texture.Apply();
-        
-        Color CC = Color.red, CR = Color.blue;
-        int x = 0, y = 0;
-        // Couleur pixel courant, droite et gauche
-        Color CP, CPd, CPg;
-
-        // Pile pour stocker les germes
-        Stack<Vector2Int> p = new Stack<Vector2Int>();
-
-        // Abscisses extrêmes droite et gauche de la ligne de balayage
-        int xd, xg;
-
-        // Empiler le germe (x,y)
-        p.Push(new Vector2Int(x, y));
-
-        // Tant qu'il y a des germes à traiter
-        while (p.Count > 0)
-        {
-            // Récupérer le sommet de la pile
-            Vector2Int point = p.Peek();
-            x = point.x;
-            y = point.y;
-
-            // Dépiler le germe
-            p.Pop();
-
-            // Récupérer la couleur du pixel courant
-            CP = texture.GetPixel(x, y);
-
-            // Rechercher xd : extrême à droite
-            xd = x + 1;
-            CPd = texture.GetPixel(xd, y);
-            while (CPd != CC && xd < texture.width)
-            {
-                xd++;
-                CPd = texture.GetPixel(xd, y);
-            }
-            xd--;
-
-            // Rechercher xg : extrême à gauche
-            xg = x - 1;
-            CPg = CP;
-            while (CPg != CC && xg >= 0)
-            {
-                xg--;
-                CPg = texture.GetPixel(xg, y);
-            }
-            xg++;
-
-            // Tracer la ligne de balayage de xg à xd avec la couleur CR
-            DrawLine(new Vector3(xg, y, 0), new Vector3(xd, y, 0), CR);
-
-            // Rechercher de nouveaux germes sur la ligne de balayage au-dessus
-            x = xd;
-            CP = texture.GetPixel(x, y + 1);
-            while (x > xg)
-            {
-                while (((CP == CC) || (CP == CR)) && (x > xg))
-                {
-                    x--;
-                    CP = texture.GetPixel(x, y + 1);
-                }
-                if ((x > xg) && (CP != CC) && (CP != CR))
-                {
-                    // Empiler le nouveau germe au-dessus trouvé
-                    p.Push(new Vector2Int(x, y + 1));
-                }
-                while ((CP != CC) && (x > xg))
-                {
-                    x--;
-                    CP = texture.GetPixel(x, y + 1);
-                }
-            }
-
-            // Rechercher de nouveaux germes sur la ligne de balayage au-dessous
-            x = xd;
-            CP = texture.GetPixel(x, y - 1);
-            while (x > xg)
-            {
-                while (CP == CC)
-                {
-                    while ((CP != CC) && (x > xg))
-                    {
-                        x--;
-                        CP = texture.GetPixel(x, y - 1);
-                    }
-                }
-            }
+            DrawLine(triangle.Vertices[0], triangle.Vertices[1]);
+            DrawLine(triangle.Vertices[1], triangle.Vertices[2]);
+            DrawLine(triangle.Vertices[2], triangle.Vertices[0]);
         }
     }
 
+    private void DrawVoronoiEdges(IEnumerable<DelaunayVoronoi.Edge> edges)
+    {
+        foreach (var edge in edges)
+        {
+            DrawLine(edge.Point1, edge.Point2);
+        }
+    }
+
+    private void DrawLine(Point start, Point end)
+    {
+        // Créer un nouveau GameObject pour chaque ligne
+        var lineObject = new GameObject("Line");
+        var lineRenderer = lineObject.AddComponent<LineRenderer>();
+
+        // Définir le matériau du LineRenderer
+        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+
+        // Configuration du LineRenderer
+        lineRenderer.startWidth = 0.05f;
+        lineRenderer.endWidth = 0.05f;
+        lineRenderer.positionCount = 2;
+        lineRenderer.useWorldSpace = true;
+
+        // Définir les positions de départ et de fin
+        Vector3 startVec = new Vector3((float)start.X, (float)start.Y, 0);
+        Vector3 endVec = new Vector3((float)end.X, (float)end.Y, 0);
+        lineRenderer.SetPosition(0, startVec);
+        lineRenderer.SetPosition(1, endVec);
+
+        lineObject.transform.parent = linesSchema.transform;
+    }
+
+
+    // OTHER
 
     private List<Vector3> GrahamScan2(List<GameObject> inputPoints)
     {
@@ -826,31 +455,9 @@ public class GameManager : MonoBehaviour
 
         return points;
     }
-    
-    /**
-     * Remplir une ligne
-     */
-    void DrawLine(Vector3 start, Vector3 end, Color color)
-    {
-        // Créer un nouvel objet "Line"
-        GameObject line = new GameObject("Line");
-        line.tag = "Line";
-
-        // Ajouter un composant LineRenderer à l'objet
-        LineRenderer lr = line.AddComponent<LineRenderer>();
-
-        // Configurer le LineRenderer
-        lr.material = new Material(Shader.Find("Sprites/Default"));
-        lr.startColor = color;
-        lr.endColor = color;
-        lr.startWidth = 0.1f;
-        lr.endWidth = 0.1f;
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-    }
 }
 
-public class Edge
+/*public class Edge
 {
     public Vector3 P1 { get; set; }
     public Vector3 P2 { get; set; }
@@ -860,4 +467,4 @@ public class Edge
         P1 = p1;
         P2 = p2;
     }
-}
+}*/
