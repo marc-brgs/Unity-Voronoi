@@ -32,7 +32,7 @@ public class VisualizerController3D : MonoBehaviour
 
     private void StartConvexHull()
     {
-        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: 0, halfCubeSize: 1f, numberOfPoints: 50);
+        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 1f, numberOfPoints: 50);
         
         foreach (Vector3 p in points_Unity)
         {
