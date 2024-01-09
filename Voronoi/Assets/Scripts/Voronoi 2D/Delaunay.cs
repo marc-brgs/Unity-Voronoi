@@ -10,64 +10,22 @@ namespace DelaunayVoronoi
     {
         private double MaxX { get; set; }
         private double MaxY { get; set; }
-        private IEnumerable<Triangle> border;
+        private double MinX { get; set; }
+        private double MinY { get; set; }
 
-        public IEnumerable<Point> GeneratePoints(int amount, double maxX, double maxY)
-        {
-            MaxX = maxX;
-            MaxY = maxY;
-
-            // TODO make more beautiful
-            var point0 = new Point(0, 0);
-            var point1 = new Point(0, MaxY);
-            var point2 = new Point(MaxX, MaxY);
-            var point3 = new Point(MaxX, 0);
-            var points = new List<Point>() { point0, point1, point2, point3 };
-            var tri1 = new Triangle(point0, point1, point2);
-            var tri2 = new Triangle(point0, point2, point3);
-            border = new List<Triangle>() { tri1, tri2 };
-
-            var random = new System.Random();
-            for (int i = 0; i < amount - 4; i++)
-            {
-                var pointX = random.NextDouble() * MaxX;
-                var pointY = random.NextDouble() * MaxY;
-                points.Add(new Point(pointX, pointY));
-            }
-
-            return points;
-        }
-
+        // Init points, MaxX, MaxY, MinX, MinY
         public IEnumerable<Point> ConvertAndInitialize(List<GameObject> gameObjects)
         {
-            double maxX = gameObjects.Max(go => go.transform.position.x);
-            double maxY = gameObjects.Max(go => go.transform.position.y);
-            double minX = gameObjects.Min(go => go.transform.position.x);
-            double minY = gameObjects.Min(go => go.transform.position.y);
+            // Coordonnées du rectangle englobant
+            MaxX = gameObjects.Max(go => go.transform.position.x);
+            MaxY = gameObjects.Max(go => go.transform.position.y);
+            MinX = gameObjects.Min(go => go.transform.position.x);
+            MinY = gameObjects.Min(go => go.transform.position.y);
 
-            // Créer une bordure qui englobe tous les points
-            // En ajoutant une marge pour s'assurer que tous les points sont à l'intérieur
-            double margin = 4; // Vous pouvez ajuster cette marge selon vos besoins
-            MaxX = maxX + margin;
-            MaxY = maxY + margin;
-            double borderMinX = minX - margin;
-            double borderMinY = minY - margin;
-
-            // Points de bordure
-            var point0 = new Point(borderMinX, borderMinY);
-            var point1 = new Point(borderMinX, MaxY);
-            var point2 = new Point(MaxX, MaxY);
-            var point3 = new Point(MaxX, borderMinY);
-
-            var points = new List<Point>() { point0, point1, point2, point3 };
-
-            // Créer des triangles pour la bordure
-            var tri1 = new Triangle(point0, point1, point2);
-            var tri2 = new Triangle(point0, point2, point3);
-            border = new List<Triangle>() { tri1, tri2 };
+            List<Point> points = new List<Point>();
 
             // Convertir les GameObjects en Points
-            foreach (var go in gameObjects)
+            foreach (GameObject go in gameObjects)
             {
                 points.Add(new Point(go.transform.position.x, go.transform.position.y));
             }
@@ -75,40 +33,44 @@ namespace DelaunayVoronoi
             return points;
         }
 
-        public IEnumerable<Triangle> BowyerWatson(IEnumerable<Point> points)
+        public HashSet<Triangle> BowyerWatson(IEnumerable<Point> points)
         {
-            //var supraTriangle = GenerateSupraTriangle();
-            var triangulation = new HashSet<Triangle>(border);
+            Triangle superTriangle = GenerateSuperTriangle();
+            HashSet<Triangle> triangulation = new HashSet<Triangle>(new List<Triangle> { superTriangle });
 
-            foreach (var point in points)
+            foreach (Point point in points)
             {
-                var badTriangles = FindBadTriangles(point, triangulation);
-                var polygon = FindHoleBoundaries(badTriangles);
+                // Trouve les triangles dont le cercle circonscrit contient le point (ne vérifie pas le critère de Delaunay)
+                List<Triangle> badTriangles = FindBadTriangles(point, triangulation);
+                List<Edge> polygon = FindHoleBoundaries(badTriangles);
 
-                foreach (var triangle in badTriangles)
+                // Supprime les triangles adjacents au vertices des mauvais triangles
+                foreach (Triangle triangle in badTriangles)
                 {
-                    foreach (var vertex in triangle.Vertices)
+                    foreach (Point vertex in triangle.Vertices)
                     {
                         vertex.AdjacentTriangles.Remove(triangle);
                     }
                 }
                 triangulation.RemoveWhere(o => badTriangles.Contains(o));
 
-                foreach (var edge in polygon.Where(possibleEdge => possibleEdge.Point1 != point && possibleEdge.Point2 != point))
+                foreach (Edge edge in polygon.Where(possibleEdge => possibleEdge.Point1 != point && possibleEdge.Point2 != point))
                 {
-                    var triangle = new Triangle(point, edge.Point1, edge.Point2);
+                    // Ajoute un nouveau triangle à la triangulation
+                    Triangle triangle = new Triangle(point, edge.Point1, edge.Point2);
                     triangulation.Add(triangle);
                 }
             }
 
-            //triangulation.RemoveWhere(o => o.Vertices.Any(v => supraTriangle.Vertices.Contains(v)));
+            // Supprime les triangles ayant au moins une arête en commun avec le super-triangle
+            triangulation.RemoveWhere(o => o.Vertices.Any(v => superTriangle.Vertices.Contains(v)));
             return triangulation;
         }
 
-        private List<Edge> FindHoleBoundaries(ISet<Triangle> badTriangles)
+        private List<Edge> FindHoleBoundaries(List<Triangle> badTriangles)
         {
             var edges = new List<Edge>();
-            foreach (var triangle in badTriangles)
+            foreach (Triangle triangle in badTriangles)
             {
                 edges.Add(new Edge(triangle.Vertices[0], triangle.Vertices[1]));
                 edges.Add(new Edge(triangle.Vertices[1], triangle.Vertices[2]));
@@ -119,24 +81,23 @@ namespace DelaunayVoronoi
             return boundaryEdges.ToList();
         }
 
-        private Triangle GenerateSupraTriangle()
+        private Triangle GenerateSuperTriangle()
         {
-            //   1  -> maxX
-            //  / \
-            // 2---3
-            // |
-            // v maxY
-            var margin = 500;
-            var point1 = new Point(0.5 * MaxX, -2 * MaxX - margin);
-            var point2 = new Point(-2 * MaxY - margin, 2 * MaxY + margin);
-            var point3 = new Point(2 * MaxX + MaxY + margin, 2 * MaxY + margin);
-            return new Triangle(point1, point2, point3);
+            // A
+            // | \
+            // B---C
+            double epsilon = 1; // Ne peut pas être à 0 sinon 3 points seront collinéaires
+            Point A = new Point(MinX - epsilon, MinY - epsilon);
+            Point B = new Point(MinX + 2*(MaxX - MinX) + 3 * epsilon, MinY - epsilon);
+            Point C = new Point(MinX - epsilon, MinY + 2 * (MaxY - MinY) + 3 * epsilon);
+            return new Triangle(A, B, C);
         }
 
-        private ISet<Triangle> FindBadTriangles(Point point, HashSet<Triangle> triangles)
+        // Trouve les triangles dont le cercle circonscrit contient le point
+        private List<Triangle> FindBadTriangles(Point point, HashSet<Triangle> triangles)
         {
-            var badTriangles = triangles.Where(o => o.IsPointInsideCircumcircle(point));
-            return new HashSet<Triangle>(badTriangles);
+            var badTriangles = triangles.Where(o => o.IsPointInsideCircleCirconscrit(point));
+            return new List<Triangle>(badTriangles);
         }
     }
 }

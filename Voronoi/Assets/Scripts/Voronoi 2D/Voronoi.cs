@@ -6,14 +6,15 @@ namespace DelaunayVoronoi
 {
     public class Voronoi
     {
-        public IEnumerable<Edge> GenerateEdgesFromDelaunay(IEnumerable<Triangle> triangulation)
+        // On relie le centre des cercles circonscris de chaque triangle
+        public List<Edge> GenerateEdgesFromDelaunay(IEnumerable<Triangle> triangulation)
         {
-            var voronoiEdges = new HashSet<Edge>();
-            foreach (var triangle in triangulation)
+            List<Edge> voronoiEdges = new List<Edge>();
+            foreach (Triangle triangle in triangulation)
             {
-                foreach (var neighbor in triangle.TrianglesWithSharedEdge)
+                foreach (Triangle neighbor in triangle.TrianglesWithSharedEdge)
                 {
-                    var edge = new Edge(triangle.Circumcenter, neighbor.Circumcenter);
+                    Edge edge = new Edge(triangle.CentreCirconscrit, neighbor.CentreCirconscrit);
                     voronoiEdges.Add(edge);
                 }
             }

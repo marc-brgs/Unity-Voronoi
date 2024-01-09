@@ -9,7 +9,7 @@ namespace DelaunayVoronoi
     public class Triangle
     {
         public Point[] Vertices { get; } = new Point[3];
-        public Point Circumcenter { get; private set; }
+        public Point CentreCirconscrit { get; private set; }
         public double RadiusSquared;
 
         public IEnumerable<Triangle> TrianglesWithSharedEdge
@@ -32,11 +32,9 @@ namespace DelaunayVoronoi
 
         public Triangle(Point point1, Point point2, Point point3)
         {
-            // In theory this shouldn't happen, but it was at one point so this at least makes sure we're getting a
-            // relatively easily-recognised error message, and provides a handy breakpoint for debugging.
             if (point1 == point2 || point1 == point3 || point2 == point3)
             {
-                throw new ArgumentException("Must be 3 distinct points");
+                throw new ArgumentException("Création d'un triangle avec 3 points non distincts");
             }
 
             if (!IsCounterClockwise(point1, point2, point3))
@@ -55,31 +53,30 @@ namespace DelaunayVoronoi
             Vertices[0].AdjacentTriangles.Add(this);
             Vertices[1].AdjacentTriangles.Add(this);
             Vertices[2].AdjacentTriangles.Add(this);
-            UpdateCircumcircle();
+            UpdateCercleCirconscrit();
         }
 
-        private void UpdateCircumcircle()
+        private void UpdateCercleCirconscrit()
         {
             // https://codefound.wordpress.com/2013/02/21/how-to-compute-a-circumcircle/#more-58
-            // https://en.wikipedia.org/wiki/Circumscribed_circle
-            var p0 = Vertices[0];
-            var p1 = Vertices[1];
-            var p2 = Vertices[2];
-            var dA = p0.X * p0.X + p0.Y * p0.Y;
-            var dB = p1.X * p1.X + p1.Y * p1.Y;
-            var dC = p2.X * p2.X + p2.Y * p2.Y;
+            Point p0 = Vertices[0];
+            Point p1 = Vertices[1];
+            Point p2 = Vertices[2];
+            double dA = p0.X * p0.X + p0.Y * p0.Y;
+            double dB = p1.X * p1.X + p1.Y * p1.Y;
+            double dC = p2.X * p2.X + p2.Y * p2.Y;
 
-            var aux1 = (dA * (p2.Y - p1.Y) + dB * (p0.Y - p2.Y) + dC * (p1.Y - p0.Y));
-            var aux2 = -(dA * (p2.X - p1.X) + dB * (p0.X - p2.X) + dC * (p1.X - p0.X));
-            var div = (2 * (p0.X * (p2.Y - p1.Y) + p1.X * (p0.Y - p2.Y) + p2.X * (p1.Y - p0.Y)));
+            double aux1 = (dA * (p2.Y - p1.Y) + dB * (p0.Y - p2.Y) + dC * (p1.Y - p0.Y));
+            double aux2 = -(dA * (p2.X - p1.X) + dB * (p0.X - p2.X) + dC * (p1.X - p0.X));
+            double div = (2 * (p0.X * (p2.Y - p1.Y) + p1.X * (p0.Y - p2.Y) + p2.X * (p1.Y - p0.Y)));
 
             if (div == 0)
             {
-                throw new DivideByZeroException();
+                throw new DivideByZeroException(); // Points collinéaires
             }
 
-            var center = new Point(aux1 / div, aux2 / div);
-            Circumcenter = center;
+            Point center = new Point(aux1 / div, aux2 / div);
+            CentreCirconscrit = center;
             RadiusSquared = (center.X - p0.X) * (center.X - p0.X) + (center.Y - p0.Y) * (center.Y - p0.Y);
         }
 
@@ -96,11 +93,12 @@ namespace DelaunayVoronoi
             return sharedVertices == 2;
         }
 
-        public bool IsPointInsideCircumcircle(Point point)
+        public bool IsPointInsideCircleCirconscrit(Point point)
         {
-            var d_squared = (point.X - Circumcenter.X) * (point.X - Circumcenter.X) +
-                (point.Y - Circumcenter.Y) * (point.Y - Circumcenter.Y);
-            return d_squared < RadiusSquared;
+            // sqrt(x² + y²)
+            double distanceSquared = (point.X - CentreCirconscrit.X) * (point.X - CentreCirconscrit.X) +
+                (point.Y - CentreCirconscrit.Y) * (point.Y - CentreCirconscrit.Y);
+            return distanceSquared < RadiusSquared;
         }
     }
 }

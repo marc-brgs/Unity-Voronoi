@@ -33,135 +33,199 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject pointPrefab;
     private List<GameObject> points = new List<GameObject>();
 
-    private bool drawingPoints;
     [SerializeField] private LineRenderer lineRenderer;
 
-    [SerializeField] private GameObject linesSchema;
+    [SerializeField] private GameObject delaunayLines;
+    [SerializeField] private GameObject voronoiLines;
 
     public enum ConvexHullMethod { Jarvis, GrahamScan };
     public enum TriangulationMethod { Delaunay, Voronoi};
 
+    [SerializeField] Button btnBackground;
     [SerializeField] Button btnJarvis;
     [SerializeField] Button btnGraham;
     [SerializeField] Button btnIncremental;
     [SerializeField] Button btnDelaunay;
     [SerializeField] Button btnVoronoi;
 
-    private int realtime = 0;
+    private bool[] realtime = new bool[] { false, false, false, false, false };
+    //private int realtime = 0;
 
     // Start is called before the first frame update
     void Start()
     {
-        drawingPoints = true;
+        btnBackground.onClick.AddListener(() => { });
 
+        // Buttons listeners
         btnJarvis.onClick.AddListener(() =>
         {
             Destroy(points[points.Count-1]);
             points.RemoveAt(points.Count-1);
+            clearConvexHull();
 
-            ComputeConvexHull(points, ConvexHullMethod.Jarvis);
-            realtime = 1;
+            realtime[0] = !realtime[0];
+            if (!realtime[0]) return;
+
+            updateRealtime();
         });
 
         btnGraham.onClick.AddListener(() =>
         {
             Destroy(points[points.Count - 1]);
             points.RemoveAt(points.Count - 1);
+            clearConvexHull();
 
-            ComputeConvexHull(points, ConvexHullMethod.GrahamScan);
-            realtime = 2;
+            realtime[1] = !realtime[1];
+            if (!realtime[1]) return;
+
+            updateRealtime();
         });
 
         btnIncremental.onClick.AddListener(() =>
         {
-            /*Destroy(points[points.Count - 1]);
+            Destroy(points[points.Count - 1]);
             points.RemoveAt(points.Count - 1);
 
-            List<Vector3> l = new List<Vector3>();
-            for (int i = 0; i < points.Count; i++)
-            {
-                l.Add(points[i].transform.position);
-            }
-            List<Vector3> tri = IncrementalTriangulation(l);
-            Debug.Log(tri.Count);
+            realtime[2] = !realtime[2];
+            if (!realtime[2]) return;
 
-            lineRenderer.positionCount = tri.Count;
-            for (int i = 0; i < tri.Count; i++)
-            {
-                lineRenderer.SetPosition(i, tri[i]);
-            }
-            realtime = 3;*/
+            updateRealtime();
         });
 
         btnDelaunay.onClick.AddListener(() =>
         {
             Destroy(points[points.Count - 1]);
             points.RemoveAt(points.Count - 1);
+            clearLines(delaunayLines);
 
-            clearDelaunaySchema();
-            GenerateVoronoiDiagram(TriangulationMethod.Delaunay);
-            realtime = 3;
+            realtime[3] = !realtime[3];
+            if (!realtime[3]) return;
+
+            updateRealtime();
         });
 
         btnVoronoi.onClick.AddListener(() =>
         {
             Destroy(points[points.Count - 1]);
             points.RemoveAt(points.Count - 1);
+            clearLines(voronoiLines);
 
-            clearDelaunaySchema();
-            GenerateVoronoiDiagram(TriangulationMethod.Voronoi);
-            realtime = 4;
+            realtime[4] = !realtime[4];
+            if (!realtime[4]) return;
+
+            updateRealtime();
         });
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (drawingPoints)
+        if (Input.GetKey(KeyCode.LeftShift) && Input.GetButton("Fire1"))
         {
-            if (Input.GetMouseButtonDown(0))
-            {
-                Vector3 screenPosition = Input.mousePosition;
-                Vector3 worldPosition = Camera.main.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, 1f));
-                points.Add(CreatePoint(worldPosition));
+            // Move closest point
+            Vector3 screenPosition = Input.mousePosition;
+            Vector3 worldPosition = Camera.main.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, 0f));
 
-                
-                if (realtime == 1)
+            int index = -1;
+            float minDistance = 0;
+            for (int i = 0; i < points.Count; i++)
+            {
+                float currentDistance = Vector3.Distance(points[i].transform.position, worldPosition);
+                if (minDistance == 0) minDistance = currentDistance;
+
+                if (currentDistance <= minDistance)
                 {
-                    ComputeConvexHull(points, ConvexHullMethod.Jarvis);
-                }
-                else if(realtime == 2)
-                {
-                    ComputeConvexHull(points, ConvexHullMethod.GrahamScan);
-                }
-                else if (realtime == 3)
-                {
-                    clearDelaunaySchema();
-                    GenerateVoronoiDiagram(TriangulationMethod.Delaunay);
-                }
-                else if (realtime == 4)
-                {
-                    clearDelaunaySchema();
-                    GenerateVoronoiDiagram(TriangulationMethod.Voronoi);
+                    minDistance = currentDistance;
+                    index = i;
                 }
             }
+
+            if(index != -1)
+            {
+                points[index].transform.position = new Vector3(worldPosition.x, worldPosition.y, 0f);
+            }
+            
+
+            updateRealtime();
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
+            // Create point
+            Vector3 screenPosition = Input.mousePosition;
+            Vector3 worldPosition = Camera.main.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, 0f));
+            points.Add(CreatePoint(worldPosition));
+
+            updateRealtime();
         }
 
-        if(Input.GetKeyDown(KeyCode.Delete))
+        if (Input.GetMouseButtonDown(1))
         {
-            lineRenderer.SetPositions(Array.Empty<Vector3>());
-            lineRenderer.positionCount = 0;
-            drawingPoints = true;
+            // Remove closest point
+            Vector3 screenPosition = Input.mousePosition;
+            Vector3 worldPosition = Camera.main.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, 0f));
 
+            int indexToRemove = -1;
+            float minDistance = 0;
+            for (int i = 0; i < points.Count; i++)
+            {
+                float currentDistance = Vector3.Distance(points[i].transform.position, worldPosition);
+                if (minDistance == 0) minDistance = currentDistance;
+
+                if (currentDistance <= minDistance)
+                {
+                    minDistance = currentDistance;
+                    indexToRemove = i;
+                }
+            }
+
+            if (indexToRemove != -1)
+            {
+                Destroy(points[indexToRemove]);
+                points.RemoveAt(indexToRemove);
+            }
+
+            updateRealtime();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Delete))
+        {
             // Delete points
             foreach(GameObject p in points)
             {
                 Destroy(p);
             }
             points.Clear();
-
-            realtime = 0;
+            clearLines(delaunayLines);
+            clearLines(voronoiLines);
         }
+    }
+
+    private void updateRealtime()
+    {
+        if (realtime[0] == true)
+        {
+            ComputeConvexHull(points, ConvexHullMethod.Jarvis);
+        }
+        if (realtime[1] == true)
+        {
+            ComputeConvexHull(points, ConvexHullMethod.GrahamScan);
+        }
+        if (realtime[3] == true)
+        {
+            clearLines(delaunayLines);
+            GenerateVoronoiDiagram(TriangulationMethod.Delaunay);
+        }
+        if (realtime[4] == true)
+        {
+            clearLines(voronoiLines);
+            GenerateVoronoiDiagram(TriangulationMethod.Voronoi);
+        }
+    }
+
+    private void clearConvexHull()
+    {
+        lineRenderer.SetPositions(Array.Empty<Vector3>());
+        lineRenderer.positionCount = 0;
     }
 
     private GameObject CreatePoint(Vector3 position)
@@ -343,11 +407,11 @@ public class GameManager : MonoBehaviour
 
     // VORONOI ET DELAUNAY
 
-    void clearDelaunaySchema()
+    void clearLines(GameObject parent)
     {
-        for (int i = 0; i < linesSchema.transform.childCount; i++)
+        for (int i = 0; i < parent.transform.childCount; i++)
         {
-            Destroy(linesSchema.transform.GetChild(i).gameObject);
+            Destroy(parent.transform.GetChild(i).gameObject);
         }
     }
 
@@ -366,11 +430,11 @@ public class GameManager : MonoBehaviour
         var convertedPoints = delaunay.ConvertAndInitialize(points);
 
         // Créer la triangulation de Delaunay
-        var triangles = delaunay.BowyerWatson(convertedPoints);
+        HashSet<Triangle> triangles = delaunay.BowyerWatson(convertedPoints);
 
         // Générer le diagramme de Voronoi
         var voronoi = new Voronoi();
-        var voronoiEdges = voronoi.GenerateEdgesFromDelaunay(triangles);
+        List<DelaunayVoronoi.Edge> voronoiEdges = voronoi.GenerateEdgesFromDelaunay(triangles);
 
         if(method == TriangulationMethod.Delaunay)
         {
@@ -386,28 +450,32 @@ public class GameManager : MonoBehaviour
     {
         foreach (var triangle in triangles)
         {
-            DrawLine(triangle.Vertices[0], triangle.Vertices[1]);
-            DrawLine(triangle.Vertices[1], triangle.Vertices[2]);
-            DrawLine(triangle.Vertices[2], triangle.Vertices[0]);
+            DrawLine(delaunayLines, triangle.Vertices[0], triangle.Vertices[1]);
+            DrawLine(delaunayLines, triangle.Vertices[1], triangle.Vertices[2]);
+            DrawLine(delaunayLines, triangle.Vertices[2], triangle.Vertices[0]);
         }
     }
 
-    private void DrawVoronoiEdges(IEnumerable<DelaunayVoronoi.Edge> edges)
+    private void DrawVoronoiEdges(List<DelaunayVoronoi.Edge> edges)
     {
         foreach (var edge in edges)
         {
-            DrawLine(edge.Point1, edge.Point2);
+            DrawLine(voronoiLines, edge.Point1, edge.Point2);
         }
     }
 
-    private void DrawLine(Point start, Point end)
+    private void DrawLine(GameObject parent, Point start, Point end)
     {
         // Créer un nouveau GameObject pour chaque ligne
-        var lineObject = new GameObject("Line");
-        var lineRenderer = lineObject.AddComponent<LineRenderer>();
+        GameObject lineObject = new GameObject("Line");
+        LineRenderer lineRenderer = lineObject.AddComponent<LineRenderer>();
 
         // Définir le matériau du LineRenderer
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+
+        if(parent.gameObject.name == "VoronoiLines") {
+            lineRenderer.material.color = new Color(0.3f, 0.8f, 0.9f);
+        }
 
         // Configuration du LineRenderer
         lineRenderer.startWidth = 0.05f;
@@ -421,7 +489,7 @@ public class GameManager : MonoBehaviour
         lineRenderer.SetPosition(0, startVec);
         lineRenderer.SetPosition(1, endVec);
 
-        lineObject.transform.parent = linesSchema.transform;
+        lineObject.transform.parent = parent.transform;
     }
 
 
