@@ -30,7 +30,7 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
 
         foreach (Vector3 p in pointsToAdd)
         {
-            bool isWithinHull = _Intersections.PointWithinConvexHull(p, convexHull);
+            bool isWithinHull = PointWithinConvexHull(p, convexHull);
 
             if (isWithinHull)
             {
@@ -40,14 +40,10 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
 
                 continue;
             }
-
             
             controller.DisplayActivePoint(p);
 
-            HashSet<HalfEdgeFace3> visibleTriangles = null;
-            HashSet<HalfEdge3> borderEdges = null;
-
-            IterativeHullAlgorithm3D.FindVisibleTrianglesAndBorderEdgesFromPoint(p, convexHull, out visibleTriangles, out borderEdges);
+            IterativeHullAlgorithm3D.FindVisibleTrianglesAndBorderEdgesFromPoint(p, convexHull, out var visibleTriangles, out var borderEdges);
 
             foreach (HalfEdgeFace3 triangle in visibleTriangles)
             {
@@ -113,5 +109,27 @@ public class VisualizeIterativeConvexHull : MonoBehaviour
         controller.HideActivePoint();
         
         yield return null;
+    }
+    
+    public static bool PointWithinConvexHull(Vector3 point, HalfEdgeData3 convexHull)
+    {
+        bool isInside = true;
+
+        float epsilon = Geometry.EPSILON;
+        foreach (HalfEdgeFace3 triangle in convexHull.faces)
+        {
+            Plane3 plane = new Plane3(triangle.edge.v.position, triangle.edge.v.normal);
+
+            float distance = Geometry.GetSignedDistanceFromPointToPlane(point, plane);
+            
+            if (distance > 0f + epsilon)
+            {
+                isInside = false;
+
+                break;
+            }
+        }
+
+        return isInside;
     }
 }

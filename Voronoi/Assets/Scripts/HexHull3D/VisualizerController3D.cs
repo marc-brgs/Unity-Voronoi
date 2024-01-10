@@ -8,9 +8,9 @@ public class VisualizerController3D : MonoBehaviour
     public GameObject pointObj;
     public GameObject pointActiveObj;
 
-    private HashSet<GameObject> allPoints = new();
-
-    public Normalizer3 normalizer;
+    private readonly HashSet<GameObject> allPoints = new();
+    public bool isSphere;
+    public int numberOfPoints = 50;
 
     void Awake()
 	{
@@ -24,9 +24,7 @@ public class VisualizerController3D : MonoBehaviour
 
     private void StartConvexHull()
     {
-        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 5f, numberOfPoints: 50);
-        
-        
+        HashSet<Vector3> points_Unity = GenerateRandomPoints3D(seed: Random.Range(0, 100000), halfCubeSize: 5f, numberOfPoints: numberOfPoints, isSphere: isSphere);
         
         foreach (Vector3 p in points_Unity)
         {
@@ -36,10 +34,6 @@ public class VisualizerController3D : MonoBehaviour
 
             allPoints.Add(newPoint);
         }
-        
-        //HashSet<Vector3> points = new HashSet<Vector3>(points_Unity.Select(x => x.ToVector3()));
-        
-        normalizer = new Normalizer3(new List<Vector3>(points_Unity));
 
         VisualizeIterativeConvexHull visualizeThisAlgorithm = GetComponent<VisualizeIterativeConvexHull>();
 
@@ -75,8 +69,6 @@ public class VisualizerController3D : MonoBehaviour
     
     public void HideVisiblePoint(Vector3 pos)
     {
-        Vector3 pos_unNormalized = normalizer.UnNormalize(pos);
-
         foreach (GameObject go in allPoints)
         {
             if (!go.activeInHierarchy)
@@ -84,7 +76,7 @@ public class VisualizerController3D : MonoBehaviour
                 continue;
             }
 
-            if (Mathf.Abs(Vector3.Magnitude(pos_unNormalized - go.transform.position)) < 0.0001f)
+            if (Mathf.Abs(Vector3.Magnitude(pos - go.transform.position)) < 0.0001f)
             {
                 go.SetActive(false);
 
@@ -100,8 +92,8 @@ public class VisualizerController3D : MonoBehaviour
             HideVisiblePoint(v.position);
         }
     }
-    
-    public static HashSet<Vector3> GenerateRandomPoints3D(int seed, float halfCubeSize, int numberOfPoints)
+
+    private static HashSet<Vector3> GenerateRandomPoints3D(int seed, float halfCubeSize, int numberOfPoints, bool isSphere)
     {
         HashSet<Vector3> randomPoints = new HashSet<Vector3>();
 
@@ -113,15 +105,18 @@ public class VisualizerController3D : MonoBehaviour
 
         for (int i = 0; i < numberOfPoints; i++)
         {
-            /*
-            float randomX = Random.Range(min, max);
-            float randomY = Random.Range(min, max);
-            float randomZ = Random.Range(min, max);
+            if (!isSphere)
+            {
+                float randomX = Random.Range(min, max);
+                float randomY = Random.Range(min, max);
+                float randomZ = Random.Range(min, max);
 
-            randomPoints.Add(new Vector3(randomX, randomY, randomZ));
-            */
-
-            randomPoints.Add(Random.insideUnitSphere * halfCubeSize);
+                randomPoints.Add(new Vector3(randomX, randomY, randomZ));
+            }
+            else
+            {
+                randomPoints.Add(Random.insideUnitSphere * halfCubeSize);
+            }
         }
 
         return randomPoints;

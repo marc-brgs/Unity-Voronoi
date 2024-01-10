@@ -10,26 +10,19 @@
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/IterativeHullAlgorithm3D.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/IterativeHullAlgorithm3D.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/VisualizeIterativeConvexHull.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/VisualizeIterativeConvexHull.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/VisualizerController3D.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/VisualizerController3D.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Geometry.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Geometry.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Intersections.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Intersections.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/AABB.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/AABB.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Edge.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Edge.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Half-edge/HalfEdgeData2.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Half-edge/HalfEdgeData2.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Geometry.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/Geometry.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Geometry.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/Geometry.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Intersections.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Intersections.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/AABB.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/AABB.cs.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Half-edge/HalfEdgeData3.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Half-edge/HalfEdgeData3.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyMesh.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyMesh.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyMeshVertex.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyMeshVertex.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyVector2.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyVector2.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyVector2Int.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyVector2Int.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyVector3.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/MyVector3.cs.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Plane.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Data structures/Plane.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/ExtensionMethods.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/ExtensionMethods.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/MathUtility.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/MathUtility.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Normalizer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Normalizer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/MathUtility.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/MathUtility.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Normalizer.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/HexHull3D/_Utility scripts/Normalizer.cs.meta" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +109,7 @@
       <workItem from="1704750787290" duration="1000" />
       <workItem from="1704758489415" duration="7000" />
       <workItem from="1704806344181" duration="222000" />
-      <workItem from="1704807208536" duration="4333000" />
+      <workItem from="1704807208536" duration="8591000" />
     </task>
     <servers />
   </component>

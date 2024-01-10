@@ -62,7 +62,7 @@ public static class IterativeHullAlgorithm3D
                 
                 Plane3 plane = new Plane3(oppositeTriangle.edge.v.position, oppositeTriangle.edge.v.normal);
 
-                bool isPointOutsidePlane = _Geometry.IsPointOutsidePlane(p, plane);
+                bool isPointOutsidePlane = Geometry.IsPointOutsidePlane(p, plane);
 
                 if (isPointOutsidePlane)
                 {
@@ -94,7 +94,7 @@ public static class IterativeHullAlgorithm3D
         {
             Plane3 plane = new Plane3(triangle.edge.v.position, triangle.edge.v.normal);
 
-            bool isPointOutsidePlane = _Geometry.IsPointOutsidePlane(p, plane);
+            bool isPointOutsidePlane = Geometry.IsPointOutsidePlane(p, plane);
 
             if (isPointOutsidePlane)
             {
@@ -139,7 +139,7 @@ public static class IterativeHullAlgorithm3D
         HalfEdgeFace3 triangleToRemove = triangles[0];
         HalfEdgeFace3 triangleToKeep = triangles[1];
 
-        if (_Geometry.GetSignedDistanceFromPointToPlane(p4, plane) < 0f)
+        if (Geometry.GetSignedDistanceFromPointToPlane(p4, plane) < 0f)
         {
             triangleToRemove = triangles[1];
             triangleToKeep = triangles[0];
@@ -168,9 +168,9 @@ public static class IterativeHullAlgorithm3D
 
         foreach (Vector3 p in points)
         {
-            float distance = _Geometry.GetSignedDistanceFromPointToPlane(p, plane);
+            float distance = Geometry.GetSignedDistanceFromPointToPlane(p, plane);
 
-            float epsilon = MathUtility.EPSILON;
+            float epsilon = Geometry.EPSILON;
 
             if (distance > -epsilon && distance < epsilon)
             {
@@ -264,13 +264,13 @@ public static class IterativeHullAlgorithm3D
 
         Edge3 eFurthestApart = pointCombinations[0];
 
-        float maxDistanceBetween = _Geometry.SqrDistance(eFurthestApart.p1, eFurthestApart.p2);
+        float maxDistanceBetween = Geometry.SqrDistance(eFurthestApart.p1, eFurthestApart.p2);
 
         for (int i = 1; i < pointCombinations.Count; i++)
         {
             Edge3 e = pointCombinations[i];
 
-            float distanceBetween = _Geometry.SqrDistance(e.p1, e.p2);
+            float distanceBetween = Geometry.SqrDistance(e.p1, e.p2);
 
             if (distanceBetween > maxDistanceBetween)
             {
@@ -290,17 +290,17 @@ public static class IterativeHullAlgorithm3D
 
         Vector3 pointFurthestAway = points[0];
 
-        Vector3 closestPointOnLine = _Geometry.GetClosestPointOnLine(edge, pointFurthestAway, withinSegment: false);
+        Vector3 closestPointOnLine = Geometry.GetClosestPointOnLine(edge, pointFurthestAway, withinSegment: false);
 
-        float maxDistSqr = _Geometry.SqrDistance(pointFurthestAway, closestPointOnLine);
+        float maxDistSqr = Geometry.SqrDistance(pointFurthestAway, closestPointOnLine);
 
         for (int i = 1; i < points.Count; i++)
         {
             Vector3 thisPoint = points[i];
             
-            closestPointOnLine = _Geometry.GetClosestPointOnLine(edge, thisPoint, withinSegment: false);
+            closestPointOnLine = Geometry.GetClosestPointOnLine(edge, thisPoint, withinSegment: false);
 
-            float distSqr = _Geometry.SqrDistance(thisPoint, closestPointOnLine);
+            float distSqr = Geometry.SqrDistance(thisPoint, closestPointOnLine);
 
             if (distSqr > maxDistSqr)
             {

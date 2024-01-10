@@ -405,6 +405,8 @@ MonoBehaviour:
   displayMeshHere: {fileID: 1494734586}
   pointObj: {fileID: 1498460315}
   pointActiveObj: {fileID: 194448891}
+  isSphere: 1
+  numberOfPoints: 2
 --- !u!4 &1792860406
 Transform:
   m_ObjectHideFlags: 0

@@ -1,7 +1,9 @@
 using UnityEngine;
 
-public static class _Geometry
+public static class Geometry
 {
+    public const float EPSILON = 0.00001f;
+    
     public static float GetSignedDistanceFromPointToPlane(Vector3 pointPos, Plane3 plane)
     {
         float distance = Vector3.Dot(plane.normal, pointPos - plane.pos);
@@ -12,17 +14,8 @@ public static class _Geometry
     public static bool IsPointOutsidePlane(Vector3 pointPos, Plane3 plane) 
     {
         float distance = GetSignedDistanceFromPointToPlane(pointPos, plane);
-        
-        float epsilon = MathUtility.EPSILON;
 
-        if (distance > 0f + epsilon)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return distance > 0f + EPSILON;
     }
     
     public static Vector3 GetClosestPointOnLine(Edge3 e, Vector3 p, bool withinSegment)
@@ -36,7 +29,7 @@ public static class _Geometry
         float distance = Vector3.Dot(ap, ab) / Vector3.SqrMagnitude(ab);
 
 
-        float epsilon = MathUtility.EPSILON;
+        float epsilon = EPSILON;
 
         if (withinSegment && distance < 0f - epsilon)
         {

@@ -1,13 +1,10 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class HalfEdgeData3
 {
     public HashSet<HalfEdgeVertex3> verts = new(); 
-
     public HashSet<HalfEdgeFace3> faces = new();
-
     public HashSet<HalfEdge3> edges = new();
 
 
@@ -192,7 +189,7 @@ public class HalfEdgeFace3
     {
         List<HalfEdge3> allEdges = new List<HalfEdge3>();
     
-        HalfEdge3 currentEdge = this.edge;
+        HalfEdge3 currentEdge = edge;
 
         int safety = 0;
 
@@ -211,7 +208,7 @@ public class HalfEdgeFace3
                 return null;
             }
         }
-        while (currentEdge != this.edge);
+        while (currentEdge != edge);
 
         return allEdges;
     }
